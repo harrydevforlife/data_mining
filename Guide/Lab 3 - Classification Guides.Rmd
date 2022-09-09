@@ -1,0 +1,333 @@
+---
+title: "Lab 3 - Classification Guides"
+author: "hoangqd"
+date: "2022/04/19"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## 1. Khám phá tổng quan về dữ liệu
+
+Bài thực hành này hướng dẫn thực hiện phân loại dữ liệu dùng các thuật toán phân loại như k-nn (k nearest neighbors), cây quyết định (decision tree), Naive Bayes, ... với R dùng tập dữ liệu Iris (<https://en.wikipedia.org/wiki/Iris_flower_data_set>). Tập dữ liệu Iris bao gồm 150 mẫu từ ba loài hoa lan (setosa, virginica và versicolor). Bốn thuộc tính được đo từ mỗi mẫu là chiều dài, chiều rộng của đài hoa và chiều dài, chiều rộng của cánh hoa, được tính bằng cm. Dựa trên sự kết hợp của bốn thuộc tính này, ta sẽ áp dụng các thuật toán phân loại để phân biệt các loài hoa lan này với nhau.
+
+### 1.1. Load dữ liệu Iris
+
+```{r load, echo=TRUE}
+data("iris")
+```
+
+### 1.2. Khám phá tổng quan dữ liệu
+
+Để xem thông tin tổng quan về dữ liệu này ta dùng lệnh `summary()` hoặc `str()`.
+
+```{r, echo=TRUE}
+summary(iris)
+str(iris)
+dim(iris)
+```
+
+Kết quả của hai lệnh trên cho ta biết dữ liệu có 150 mẫu và 5 biến (variable). Species là nhãn/lớp (label/class), các biến còn lại đều nhận giá trị số. Muốn biết thêm chi tiết nội dung của dữ liệu ta dùng hàm `head()` để liệt kê các dòng đầu tiên của dữ liệu.
+
+```{r, echo=TRUE}
+head(iris)
+```
+
+Thuộc tính `Species` mô tả mỗi mẫu thuộc loài hoa lan nào. Hàm `table()` cho ta biết số lượng mẫu của mỗi loài.
+
+```{r, echo=TRUE}
+table(iris$Species)
+```
+
+## 2. Thuật toán k-nn
+
+### 2.1. Tạo training set và test set
+
+Ta sẽ tạo tập train và tập test theo tỷ lệ (2/3, 1/3), tức là 2/3 số mẫu dành cho train và 1/3 còn lại cho test (đây là phương pháp đánh giá holdout). Nghĩa là tập train sẽ chứa 100 mẫu ngẫu nhiên và tập test sẽ chứa 50 mẫu còn lại.
+
+```{r, echo=TRUE}
+set.seed(1111)
+m <- dim(iris)[1]
+ids <- sample(1:m, size = round(m/3), replace = FALSE, 
+              prob = rep(1/m, m))
+trainSet <- iris[-ids, ]
+testSet <- iris[ids, ]
+```
+
+### 2.2. Xây dựng mô hình
+
+Ta sẽ sử dụng thuật toán k-nn từ `kknn` package để thử nghiệm mô hình. Ta thực hiện cài đặt (nếu chưa cài) và load `kknn` package bằng lệnh sau:
+
+```{r, echo=TRUE}
+#install.packages("kknn")
+library(kknn)
+```
+
+Sử dụng `?kknn()` để xem thông tin chi tiết về các tham số của hàm `kknn()`. Bên dưới, ta sử dụng knn với k = 3 để phân loại các mẫu dữ liệu của tập test và minh họa kết quả.
+
+```{r, echo=TRUE}
+knnmodel = kknn(Species ~ ., trainSet, testSet, k = 3, 
+            distance = 2, kernel = "rectangular")
+summary(knnmodel)
+knnmodel.fit <- fitted(knnmodel)
+table(testSet$Species, knnmodel.fit)
+pcol <- as.character(as.numeric(testSet$Species))
+pairs(testSet[1:4], pch = pcol, 
+      col = c("green3", "red")[(testSet$Species != knnmodel.fit) + 1])
+```
+
+### 2.3. Đánh giá mô hình
+
+Để đánh giá mô hình ta sẽ tạo confusion matrix và tính các độ đo accuracy, precision, recall, f-measure từ kết quả dự đoán của mô hình và nhãn lớp thực sự trên tập dữ liệu test. Bên dưới là một ví dụ về cách tính độ đo accuracy. Hàm accuracy nhận vào hai vector là $actual$ (nhãn thật sự) và $predicted$ (nhãn được dự đoán bởi mô hình) và trả ra giá trị accuracy.
+
+```{r}
+confusion_matrix <- function(predicted, actual) {
+  return(table(predicted, actual))
+}
+
+accuracy <- function(cm) {
+  return(sum(diag(cm))/sum(cm))
+}
+```
+
+```{r, echo=TRUE}
+actual <- testSet$Species
+cm <- confusion_matrix(knnmodel.fit, actual)
+cm
+accuracy(cm)
+```
+
+### 2.4. Đánh giá mô hình dùng phương pháp cross validation
+
+Phần sau đây ta sẽ tiến hành đánh giá theo phương pháp cross validation (thay vì phương pháp holdout như ở trên) với các giá trị k (trong k-nn) khác nhau để tìm ra giá trị k tốt nhất. Đầu tiên ta sẽ tạo các fold, sau đó ta sẽ thử nghiệm trên các fold này với các giá trị k khác nhau.
+
+```{r, echo=TRUE}
+set.seed(1111)
+nfolds <- 3 # số fold
+ids <- 1:nrow(iris)
+index <- sample(ids) # xao tron ngau nhien ids
+fold <- rep(1:nfolds, each = nrow(iris)/nfolds)
+folds <- split(index, fold) # tao mot danh sach voi cac index cho moi fold
+ks <- seq(1, 19, 2) # k = 1, 3, 5, ..., 19
+accs <- matrix(0, nrow = length(ks), ncol = nfolds + 1)
+for (k in 1:length(ks)) {
+  s = 0
+  for (i in 1:nfolds) {
+    t <- kknn(Species ~ ., 
+              train = iris[-folds[[i]], ], 
+              test = iris[folds[[i]], ], 
+              k = k, 
+              distance = 2, 
+              kernel = "rectangular")
+    cm <- confusion_matrix(fitted(t), iris[folds[[i]], 5])
+    a <- accuracy(cm)
+    s = s + a
+    accs[k, i] = a
+  }
+  accs[k, nfolds + 1] = s / nfolds
+}
+rownames(accs) <- paste ("k = ", ks, sep = "")
+colnames(accs) <- c(paste("fold ", 1:nfolds, sep = ""), "average")
+accs
+```
+
+### 2.5. Trực quan hóa kết quả
+
+Vẽ đồ thị kết quả average accuracy theo k
+
+```{r, echo=TRUE}
+library(ggplot2)
+data <- data.frame(k = ks, r = as.numeric(accs[, nfolds + 1]))
+ggplot(data = data, mapping = aes(x = k, y = r)) + 
+  theme_light() +
+  ggtitle("Average accuracy by k-fold cross validation") +
+  xlab("k") + 
+  ylab("Accuracy") +
+  geom_point(colour = "red", size = 4, shape = 21, fill = "white") + 
+  geom_line(colour = "red", linetype = "dashed", fill = "white")
+```
+
+## 3. Thuật toán cây quyết định
+
+Có nhiều package cài đặt thuật toán cây quyết định (như `tree`, `party`, `rpart`, `C50`, ...). Ta sẽ dùng thư viện `party` cho ví dụ minh họa dưới đây. Ta cần cài đặt (nếu chưa cài) và load thư viện `party` trước khi sử dụng như sau:
+
+```{r, echo=TRUE}
+#install.packages("party")
+library(party)
+```
+
+### 3.1. Xây dựng mô hình
+
+Ta sẽ dùng tập train và tập test đã tạo ở trên để tạo và đánh giá cây quyết định. Sử dụng `?ctree` để xem thông tin chi tiết về các tham số của hàm `ctree`.
+
+```{r, echo=TRUE}
+dtmodel <- ctree(Species ~ ., data = trainSet) # Xây dựng cây
+plot(dtmodel, main = "Decision Tree") # Vẽ cây
+```
+
+### 3.2. Dự đoán kết quả trên tập test
+
+```{r}
+predicted <- predict(dtmodel, testSet)
+```
+
+### 3.3. Đánh giá mô hình
+
+Để đánh giá độ chính xác của cây quyết định trên test data ta có thể làm như sau:
+
+```{r, echo=TRUE}
+actual <- as.character(testSet$Species) # Nhãn/lớp thật sự
+predicted <- as.character(predicted)
+cm <- confusion_matrix(predicted, actual)
+cm
+accuracy(cm)
+```
+
+### 3.4. Trực quan hóa kết quả cho tập train
+
+Ta sẽ dùng thư viện `ggplot2` để vẽ biểu đồ về mối quan hệ giữa nhãn lớp thật sự và nhãn lớp được dự đoán bởi mô hình. Ta sẽ dùng chỉ hai thuộc tính `Petal.Length` và `Petal.Length` để minh họa các điểm dữ liệu vì khó trực quan hóa cả 4 thuộc tính. Ở biểu đồ sau, màu sắc của các điểm dữ liệu biễu diễn nhãn lớp thật sự, trong khi hình dạng của các điểm dữ liệu biễu diễn nhãn lớp được dự đoán của mô hình.
+
+```{r}
+library(ggplot2)
+
+train_pred = as.character(predict(dtmodel, trainSet))
+
+ggplot(data = trainSet, 
+       mapping = aes(x = Petal.Length, 
+                     y = Petal.Width, 
+                     color = Species,
+                     shape = train_pred)) +
+  geom_point() + 
+  ggtitle("Predicted label vs. actual label on train set")
+```
+
+### 3.5. Trực quan hóa kết quả cho tập test
+
+```{r}
+library(ggplot2)
+
+ggplot(data = testSet, 
+       mapping = aes(x = Petal.Length, 
+                     y = Petal.Width, 
+                     color = Species,
+                     shape = predicted)) +
+  geom_point() + 
+  ggtitle("Predicted label vs. actual label on test set")
+```
+
+## 4. Thử nghiệm với các thuật toán khác
+
+### 4.1. Thuật toán Naive Bayes
+
+Đầu tiên, ta cần cài đặt một thư viên có hiện thực thuật toán Naive Bayes. Thư viện `e1071` là một thư viện như vậy. Ta có thể cài đặt (nếu chưa cài) và load thư viện `e1071` trước khi sử dụng như sau:
+
+```{r, echo=TRUE}
+#install.packages("e1071")
+library(e1071)
+```
+
+#### 4.1..1 Xây dựng mô hình
+
+Ta sẽ dùng lại tập train và tập test của tập dữ liệu `iris` đã tạo ở trên để đánh thuật toán Naive Bayes. Sử dụng `?naiveBayes` để xem thông tin chi tiết về các tham số của hàm `naiveBayes`.
+
+```{r, echo=TRUE}
+nbmodel <- naiveBayes(Species ~ ., data = trainSet)
+```
+
+#### 4.1.2. Dự đoán kết quả trên tập test
+
+```{r}
+predicted <- predict(nbmodel, testSet)
+```
+
+#### 4.1.3. Đánh giá mô hình
+
+```{r}
+cm <- table(predicted, testSet$Species)
+cm
+accuracy(cm)
+```
+
+### 4.2. (Multinominal) Logistic Regression
+
+#### 4.2.1. Xây dựng mô hình
+
+```{r}
+library(nnet)
+
+mlrmodel = nnet::multinom(Species ~ ., data = trainSet)
+```
+
+#### 4.2.2. Dự đoán kết quả trên tập test
+
+```{r}
+predicted = predict(mlrmodel, testSet[-5])
+```
+
+#### 5.2.3. Đánh giá mô hình
+
+```{r}
+cm <- table(predicted, testSet$Species)
+cm
+accuracy(cm)
+```
+
+### 4.3. Support Vector Machine (SVM)
+
+#### 4.3.1. Xây dựng mô hình
+
+```{r}
+library(e1071)
+
+svmmodel = svm(formula = Species ~ .,
+                 data = trainSet,
+                 type = 'C-classification',
+                 kernel = 'linear')
+```
+
+#### 4.3.2. Dự đoán kết quả trên tập test
+
+```{r}
+predicted = predict(svmmodel, testSet[-5])
+```
+
+#### 4.3.3. Đánh giá mô hình
+
+```{r}
+cm <- table(predicted, testSet$Species)
+cm
+accuracy(cm)
+```
+
+## 5. Lựa chọn mô hình
+
+Ta sẽ dùng thư viện `caret` để thực hiện việc tinh chỉnh siêu tham số và lựa chọn mô hình cho các thuật toán. Bên dưới là một minh họa cho việc lựa chọn mô hình cho thuật toán random forest với cross validation với dùng phương pháp grid search.
+
+Tham khảo: <https://topepo.github.io/caret/random-hyperparameter-search.html>
+
+```{r}
+library(caret)
+set.seed(1111)
+inTraining <- createDataPartition(iris$Species, p = 0.8, list = FALSE)
+training <- iris[ inTraining,]
+testing  <- iris[-inTraining,]
+
+fitControl <- trainControl(method = "cv",
+                           number = 5,
+                           classProbs = TRUE,
+                           search = "grid")
+
+set.seed(2222)
+rf_fit <- train(Species ~ ., data = training, 
+                  method = "rf",
+                  metric = "Accuracy",
+                  tuneLength = 20,
+                  trControl = fitControl)
+rf_fit
+```

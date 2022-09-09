@@ -1,0 +1,9 @@
+Thuật toán k-mean xuất ra một sốbiến như sau:
+- cluster: một vector các số nguyên (1 - K) cho biết cụm mà mỗi đối tượng (object, instance.) được gnas.
+- center: một ma trận của các trung tâm cụm.
+- tots: tổng bình phương khoảng cách.
+- withinss: vector của tổng bình phương khoảng cách đến các trung tam cụm cho mỗi cụm, một thành phần tương ứng với mỗi cụm.
+- tot.withinss: được tính bằng sum(within
+- betweenss: tổng bình phương khoảng cách giữa các cụm, được tính bằng totss - tot.withinss
+- size: số lượng điểm trong mỗi cụm.
+

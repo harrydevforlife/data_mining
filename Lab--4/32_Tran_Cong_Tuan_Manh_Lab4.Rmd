@@ -1,0 +1,302 @@
+---
+title: "Lab 3 - Classification Assignments"
+author: "Tran Cong Tuan Manh - 19133035"
+date: "2022/04/19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Câu hỏi 1
+
+Cho input của hàm là hai vector mô tả nhãn thật sự và kết quả phân loại của mô hình trên test set. Giả sử các phần tử của hai vector này là đều là số nguyên và hai vector có chiều dài bằng nhau. Ta thành lập confusion matrix $M$ như sau ($C_i$ là các nhãn/lớp, $p$ là số nhãn/lớp):
+
+```{r, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+cm <- "
+| $Actual/Predicted$ | $C_1$    | $C_2$    | ...     | $C_p$     |
+| ------------------ | :------: | :------: | :-----: | --------: |
+| $C_1$              | $M_{11}$ | $M_{12}$ | ...     | $M_{1p}$  |
+| $C_2$              | $M_{21}$ | $M_{22}$ | ...     | $M_{2p}$  |
+| ...                | ...      | ...      | ...     | ...       |
+| $C_p$              | $M_{p1}$ | $M_{p2}$ | ...     | $M_{pp}$  |"
+cat(cm)
+```
+
+Dựa trên ma trận $M$, các độ đo $TP$ (True Positive), $TN$ (True Negative), $FP$ (False Positive), $FN$ (False Negative), $P$ (Precision), $R$ (Recall), và $F\_1$ ($F_1\_measure$) được tính theo các công thức sau:
+
+### TP, TN, FP, và FN
+
+$$TP_i = M_{ii}$$
+
+$$FP_i = \sum_{j=1,j \ne i}^{p} M_{ji}$$
+
+$$FN_i = \sum_{j=1,j \ne i}^{p} M_{ij}$$
+
+$$TN_i = (\sum_{i=1}^{p} \sum_{j=1}^{p} M_{ij}) - (TP_i + FP_i + FN_i)$$
+
+### Per-class Precision, Recall, và F measure
+
+$$P_i = \frac{M_{ii}}{\sum_{j=1}^{p} M_{ji}}$$ $$R_i = \frac{M_{ii}}{\sum_{j=1}^{p} M_{ij}}$$ $$F_i = \frac{2 * P_i * R_i}{P_i + R_i}$$
+
+### Micro-averaged Precision, Recall
+
+$$P = \frac{\sum_{j=1}^{p} TP_i}{\sum_{j=1}^{p} (TP_i + FP_i)} $$ $$R = \frac{\sum_{j=1}^{p} TP_i}{\sum_{j=1}^{p} (TP_i + FN_i)} $$
+
+### Macro-averaged Precision, Recall
+
+$$P = \sum_{i=1}^{p} \frac{TP_i}{TP_i + FP_i} $$
+
+$$R = \sum_{i=1}^{p} \frac{TP_i}{TP_i + FN_i} $$
+
+### F measure (cho cả trường hợp Micro-averaged và Macro-averaged)
+
+$$F_\beta = \frac{(\beta^2 + 1) * P * R}{\beta^2 * P + R}$$
+
+Khi $\beta = 1$ thì
+
+$$F_1 = \frac{2 * P * R}{P + R}$$
+
+Cho hai vector $a$ (nhãn thật sự) và $p$ (nhãn được dự đoán bởi mô hình) như bên dưới
+
+```{r, echo=TRUE}
+a = c(2, 3, 2, 3, 1, 1, 2, 1, 1, 2, 2, 3, 1, 3, 2)
+p = c(2, 3, 2, 2, 2, 3, 1, 3, 2, 3, 3, 3, 3, 1, 1)
+cm = table(a, p)
+cm
+```
+
+### a. Viết hàm tính TP, TN, FP, và FN
+
+Cho $m$ là confusion matrix, $i$ là lớp. Viết hàm tính $TP$, $TN$, $FP$, và $FN$ theo code mẫu bên dưới.
+
+```{r, echo=TRUE}
+TP <- function(m, i) {
+  return(m[i,i])
+}
+
+FN <- function(m, i) {
+  table<-m[i,-i]
+  return(sum(table))
+}
+
+FP <- function(m, i) {
+  table<-m[-i,i]
+  return(sum(table))
+}
+
+TN <- function(m, i) {
+  sub<-TP(m,i)+FP(m,i)+FN(m,i)
+  return(sum(m)-sub)
+}
+
+TP(cm, 1)
+TN(cm, 1)
+FP(cm, 1)
+TN(cm, 1)
+TP(cm, 2)
+TN(cm, 2)
+FP(cm, 2)
+TN(cm, 2)
+TP(cm, 3)
+TN(cm, 3)
+FP(cm, 3)
+TN(cm, 3)
+```
+
+### b. Viết hàm tính Per-class Precision, Recall, và F measure
+
+```{r, echo=TRUE}
+P <- function(m, i) {
+  return(TP(m,i)/(TP(m,i)+FP(m,i)))
+}
+
+R <- function(m, i) {
+ return(TP(m,i)/(TP(m,i)+FN(m,i)))
+}
+
+F <- function(m, i) {
+  up<-2*P(m,i)*R(m,i)
+  down<-P(m,i)+R(m,i)
+  return(up/down)
+}
+
+P(cm, 1)
+R(cm, 1)
+F(cm, 1)
+P(cm, 2)
+R(cm, 2)
+F(cm, 2)
+P(cm, 3)
+R(cm, 3)
+F(cm, 3)
+```
+
+### c. Viết hàm tính Micro-averaged Precision, Recall, và F measure
+
+```{r, echo=TRUE}
+P_micro <- function(m) {
+  up<-0
+  down<-0
+  for (i in c(1,nrow(m))) {
+    up<-up+TP(m,i)
+    down<-down+TP(m,i)+FP(m,i)
+  }
+  return(up/down)
+}
+
+R_micro <- function(m) {
+  up<-0
+  down<-0
+  for (i in c(1,nrow(m))) {
+    up<-up+TP(m,i)
+    down<-down+TP(m,i)+FN(m,i)
+  }
+  return(up/down)
+}
+
+F_micro <- function(m) {
+  up<-P_micro(m)*R_micro(m)*2
+  down<-P_micro(m)+R_micro(m)
+  return(up/down)
+}
+
+P_micro(cm)
+R_micro(cm)
+F_micro(cm)
+```
+
+### d. Viết hàm tính Macro-averaged Precision, Recall, và F measure
+
+```{r, echo=TRUE}
+P_macro <- function(m) {
+  total<-0
+  for (i in c(1,nrow(m))) {
+    up<-TP(m,i)
+    down<-TP(m,i)+FP(m,i)
+    total<-total+up/down
+  }
+  return(total)
+}
+
+R_macro <- function(m) {
+  total<-0
+  for (i in c(1,nrow(m))) {
+    up<-TP(m,i)
+    down<-TP(m,i)+FN(m,i)
+    total<-total+up/down
+  }
+  return(total)
+}
+
+F_macro <- function(m) {
+  up<-P_macro(m)*R_macro(m)*2
+  down<-P_macro(m)+R_macro(m)
+  return(up/down)
+}
+
+P_macro(cm)
+R_macro(cm)
+F_macro(cm)
+```
+
+## Câu hỏi 2
+
+Thực hiện lại các bước như phần hướng dẫn cho tập dữ liệu `iris` với các độ đo `Accuracy`, `F_micro`, và `F_macro` dùng các thuật toán `k-nn`, `decision tree`, `Naive Bayes`, `svm`, `random forest`, với các phương pháp đánh giá cross validation (`cv`), (leave-one-out) `LOOCV`, và 0.632 boosting (`boot632`) và lựa chọn mô hình cho các thuật toán dùng random search (`search="random"`). Tham khảo thư viện `caret` ở <https://topepo.github.io/caret/>. Để đánh giá mô hình dùng customize metric như `F_micro` và `F_macro` (không có trong thư viện `caret`), bạn cần thay đổi tham số `summaryFunction` trong hàm `trainControl` của thư viện `caret`.
+
+### a. k-fold cross validation (k = 5)
+
+Trong câu hỏi này bạn cần thực hiện phương pháp đánh giá và lựa chọn mô hình với k-fold cross validation (`k = 5`) (dùng các độ đo `Accuracy`, `F_micro`, và `F_macro`). Ngoài code, bạn hãy nhận xét thêm về kết quả của các thuật toán.
+
+```{r, echo=TRUE}
+library(kknn)
+```
+
+```{r}
+set.seed(1234)
+m <- dim(iris)[1]
+ids <- sample(1:m, size = round(m/3), replace = FALSE, 
+              prob = rep(1/m, m))
+trainSet <- iris[-ids, ]
+testSet <- iris[ids, ]
+
+knnmodel = kknn(Species ~ ., trainSet, testSet, k = 5, 
+            distance = 2, kernel = "rectangular")
+
+knnmodel.fit <- fitted(knnmodel)
+table(testSet$Species, knnmodel.fit)
+```
+
+```{r}
+confusion_matrix <- function(predicted, actual) {
+  return(table(predicted, actual))
+}
+
+accuracy <- function(cm) {
+  return(sum(diag(cm))/sum(cm))
+}
+
+actual <- testSet$Species
+cm <- confusion_matrix(knnmodel.fit, actual)
+
+accuracy(cm)
+```
+
+```{r}
+F_micro(cm)
+```
+
+```{r}
+F_macro(cm)
+```
+
+### b. Leave-one-out cross validation
+
+**Leave-one-out** là dạng đặt biệt của phương pháp đánh giá kết quả phân loại **k-fold cross validation** khi `k = n` (`n` là số phần tử của tập dữ liệu). Trong câu hỏi này bạn cần thực hiện phương pháp đánh giá và lựa chọn mô hình với leave-one-out cross validation (dùng các độ đo `Accuracy`, `F_micro`, và `F_macro`). Ngoài code, bạn hãy nhận xét thêm về kết quả của các thuật toán.
+
+```{r}
+set.seed(1234)
+nfolds <- 3 # số fold
+ids <- 1:nrow(iris)
+index <- sample(ids) # xao tron ngau nhien ids
+fold <- rep(1:nfolds, each = nrow(iris)/nfolds)
+folds <- split(index, fold) # tao mot danh sach voi cac index cho moi fold
+ks <- seq(1, 19, 2) # k = 1, 3, 5, ..., 19
+accs <- matrix(0, nrow = length(ks), ncol = nfolds + 1)
+for (k in 1:length(ks)) {
+  s = 0
+  for (i in 1:nfolds) {
+    t <- kknn(Species ~ ., 
+              train = iris[-folds[[i]], ], 
+              test = iris[folds[[i]], ], 
+              k = k, 
+              distance = 2, 
+              kernel = "rectangular")
+    cm <- confusion_matrix(fitted(t), iris[folds[[i]], 5])
+    a <- accuracy(cm)
+    s = s + a
+    accs[k, i] = a
+  }
+  accs[k, nfolds + 1] = s / nfolds
+}
+rownames(accs) <- paste ("k = ", ks, sep = "")
+colnames(accs) <- c(paste("fold ", 1:nfolds, sep = ""), "average")
+accs
+```
+
+```{r}
+F_micro(cm)
+```
+
+```{r}
+F_macro(cm)
+```
+
+### c. 0.632 boosting
+
+**0.632 boosting** là dạng đặt biệt của phương pháp đánh giá kết quả phân loại **boosting** (xem lại bài giảng). Trong câu hỏi này bạn cần thực hiện phương pháp đánh giá và lựa chọn mô hình với 0.632 boosting (dùng các độ đo `Accuracy`, `F_micro`, và `F_macro`). Ngoài code, bạn hãy nhận xét thêm về kết quả của các thuật toán.
+
+```{r, echo=TRUE}
+
+```

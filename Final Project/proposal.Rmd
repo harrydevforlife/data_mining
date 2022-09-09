@@ -1,0 +1,79 @@
+---
+title: "Proposal for Data Mining Project"
+author: "Group 6"
+output: html_document
+date: '2022-04-16'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+### Phần 1 - Giới thiệu  
+Tất cả chúng ta đều đã bị kẹt xe ở một cột đèn giao thông, chỉ được dành vài giây để đi qua một ngã tư, phía sau một đoàn người đi khác. Đó là vấn đề cần phải giải quyết, để có thể giúp các nhà lập kế hoạch thành phố và chính phủ dự đoán trước các điểm nóng về giao thông và giảm bớt căng thẳng khi dừng và đi của hàng triệu người khi tham gia giao thông.  
+  
+Dựa vào môn học Khai Thác Dữ Liệu để phân tích và trả lời các câu hỏi:  
+1.	Dùng random forest xem bài toán có khả thi không?  
+2.	Những siêu tham số nào quan trọng đối với bài toán kẹt xe?  
+3.	Thử áp dụng các thuật toán phân cụm(k-mean, Hierarchical, dbscan) vào bài toán thử xem nó có cải thiện được độ chính xác không?  
+  
+  
+Nguồn dữ liệu từ Kaggle.  
+Link: https://www.kaggle.com/competitions/bigquery-geotab-intersection-congestion/data
+Bộ dữ liệu cho cuộc thi này bao gồm thông tin tổng hợp về các phương tiện đã dừng và thời gian chờ ở giao lộ. Nhiệm vụ trong bài là dự đoán tình trạng tắc nghẽn, dựa trên thước đo tổng hợp về khoảng cách dừng xe và thời gian chờ, tại các giao lộ ở 4 thành phố lớn của Hoa Kỳ: Atlanta, Boston, Chicago & Philadelphia.  
+
+### Phần 2 - Dữ liệu
+
+
+Giải thích các biến:  
+-	RowId:	                                ID  hàng  
+-	IntersectionId:	                      ID Giao lộ  
+-	Latitude:	                            Vĩ độ  
+-	Longitude:                            Kinh độ  
+-	EntryStreetName:	                      Tên đường phố nhập  
+-	ExitStreetName:	                      Tên đường phố thoát  
+-	EntryHeading:	                        Tiêu đề mục nhập  
+-	ExitHeading:	                          Thoát tiêu đề  
+-	Hour:                                 	Giờ  
+-	Weekend:	                              Ngày cuối tuần  
+-	Month:	                                 Tháng  
+-	Path:	                                 Đường dẫn  
+-	TotalTimeStopped_p20:	               Tổng thời gian đã dừng_p20  
+-	TotalTimeStopped_p40:                	Tổng thời gian đã dừng_p40  
+-	TotalTimeStopped_p50:                	Tổng thời gian đã dừng_p50  
+-	TotalTimeStopped_p60:	                Tổng thời gian đã dừng_p60  
+-	TotalTimeStopped_p80:	                Tổng thời gian đã dừng_p80  
+-	TimeFromFirstStop_p20:	                Thời gian từ điểm dừng đầu tiên_p20  
+-	TimeFromFirstStop_p40:               	Thời gian từ điểm dừng đầu tiên_p40  
+-	TimeFromFirstStop_p50:	                Thời gian từ điểm dừng đầu tiên_p50  
+-	TimeFromFirstStop_p60:	                Thời gian từ điểm dừng đầu tiên_p60  
+-	TimeFromFirstStop_p80:	                Thời gian từ điểm dừng đầu tiên_p80  
+-	DistanceToFirstStop_p20:	              Khoảng cách đến điểm dừng đầu tiên_p20  
+-	DistanceToFirstStop_p40:              	Khoảng cách đến điểm dừng đầu tiên_p40  
+-	DistanceToFirstStop_p50:	              Khoảng cách đến điểm dừng đầu tiên_p50  
+-	DistanceToFirstStop_p60:	              Khoảng cách đến điểm dừng đầu tiên_p60  
+-	DistanceToFirstStop_p80:             	Khoảng cách đến điểm dừng đầu tiên_p80  
+-	City:	                                 Thành phố  
+
+Số dòng và cột trong dataset:
+
+-	Tóm tắt dữ liệu:
+
+
+-	Các dòng dữ liệu đầu:
+
+
+
+-	Các dòng dữ liệu cuối:
+
+
+
+Phần 3 - Kế hoạch phân tích dữ liệu  
+
+●	Input: tất cả các biến trong tập train  
+●	Output: phần trăm thứ 20, 50 và 80 cho tổng thời gian dừng lại tại một giao lộ và khoảng cách giữa giao lộ và địa điểm đầu tiên mà một chiếc xe dừng lại trong khi chờ. Có thể coi mục tiêu của mình là tóm tắt sự phân bố thời gian chờ và khoảng cách dừng tại mỗi giao lộ.  
+●	(Các) phương pháp mà nhóm tin rằng sẽ hữu ích trong việc trả lời (các) câu hỏi đặt ra: Nhóm dự định test kết quả với Random Forest, Clustering,... để dự đoán, nếu kết quả không tốt như mong đợi, nhóm sẽ bổ sung thêm thuật toán.  
+●	Kế hoạch thực hiện và phân công việc.  
+

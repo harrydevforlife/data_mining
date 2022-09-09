@@ -1,0 +1,245 @@
+---
+title: "Lab 1 - Data"
+author: "Your name"
+date: "2022/02/24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Câu 1
+
+Cho hai vector age và fat mô tả tuổi và chất béo (theo phần trăm) tương ứng như bên dưới.
+
+```{r, echo=TRUE}
+age = c(23, 23, 27, 27, 39, 41, 47, 49, 50, 52, 54, 54, 56, 57, 58, 58, 60, 61)
+fat = c(9.5, 26.5, 7.8, 17.8, 31.4, 25.9, 27.4, 27.2, 31.2, 34.6, 42.5, 28.8, 33.4, 30.2, 34.1, 32.9,
+41.2, 35.7)
+
+```
+
+### a. Viết hàm tính mean, median, variance, standard deviation (stdvar) của age và fat (không dùng những hàm tương tự có sẵn)
+
+$$mean(x) = \frac{1}{n} \sum_{i=1}^{n}x_i$$
+
+$$population\_variance(x) = \frac{1}{n} \sum_{i=1}^{n}(x_i - mean(x))^2$$
+
+$$sample\_variance(x) = \frac{1}{n - 1} \sum_{i=1}^{n}(x_i - mean(x))^2$$
+
+$$population\_stdvar(x) = \sqrt{population\_variance(x)}$$
+
+$$sample\_stdvar(x) = \sqrt{sample\_variance(x)}$$
+
+**Cách 1:** Cách viết theo cú pháp của ngôn ngữ `R`
+```{r, echo=TRUE}
+mean <-function(x) {
+  return((1/length(x)) * sum(x))
+}
+
+mean(age)
+mean(fat)
+```
+
+
+**Cách 2:** Cách viết theo cú pháp của các ngôn ngữ truyền thống như `C/C++, Java`. **Bạn nên hạn chế viết theo cách này trừ khi không nghĩ ra cách nào khác.**
+```{r, echo=TRUE}
+mean2 <-function(x) {
+  n = length(x)
+  s = 0
+  for(i in 1:n) {
+    s = s + x[i]
+  }
+  return(s/n)
+}
+
+mean2(age)
+mean2(fat)
+```
+
+Tương tự, hãy hoàn thành các hàm bên dưới.
+
+```{r, echo=TRUE}
+median <-function(x) {
+  return(sum(x) / length(x))
+  
+}
+
+population_variance <-function(x) {
+  return(mean((x-mean(x))^2))
+  
+}
+
+sample_variance <-function(x) {
+  return(sum((x-mean(x))^2)/(length(x)-1))
+  
+}
+
+population_stdvar <-function(x) {
+  return(sqrt(mean((x-mean(x))^2)))
+  
+}
+
+sample_stdvar <-function(x) {
+  return(sqrt(sum((x-mean(x))^2)/(length(x)-1)))
+  
+}
+
+median(age)
+median(fat)
+population_variance(age)
+population_variance(fat)
+sample_variance(age)
+sample_variance(fat)
+population_stdvar(age)
+population_stdvar(fat)
+sample_stdvar(age)
+sample_stdvar(fat)
+```
+
+### b. Vẽ biểu đồ boxplot, histogram của age và fat. 
+- Gợi ý: dùng hàm `hist()` và `boxplot`.
+
+- Có thể sử dụng `par(mfrow=c(2,2))` để chia màn hình hiển thị ra thành 2 cột và 2 dòng. Cách này sẽ hiệu quả nếu ta muốn minh họa nhiều biến đồng thời trên một màn hình.
+
+```{r, echo=TRUE}
+boxplot(age)
+
+```
+
+```{r, echo=TRUE}
+boxplot(fat)
+
+```
+
+```{r, echo=TRUE}
+hist(age)
+
+```
+
+```{r, echo=TRUE}
+hist(fat)
+
+```
+
+### c. Vẽ biểu đồ scatter plot giữa age và fat.
+- Gợi ý: dùng hàm `plot()` hoặc `pairs()`.
+
+```{r, echo=TRUE}
+plot(age, fat)
+```
+
+
+## Câu 2. Cho hai vector x và y như bên dưới
+```{r, echo=TRUE}
+x = c(22, 1, 42, 10)
+y = c(20, 0, 36, 8)
+```
+
+### a. Viết hàm tính khoảng cách Euclid của x và y 
+
+$\sqrt{x}$
+
+$$euclid(x,y) = \sqrt{\sum_{i=1}^{n} (x_i - y_i)^2}$$
+```{r, echo=TRUE}
+euclid <- function(x, y) {
+  return(sqrt(sum((x-y)^2)))
+  
+}
+
+euclid(x, y)
+```
+
+### b. Viết hàm tính khoảng cách supremum của x và y
+$$supremum(x,y) = \sum_{i=1}^{n} |x_i - y_i|$$
+```{r, echo=TRUE}
+supremum <- function(x, y) {
+  return(sum(abs(x-y)))
+  
+}
+
+supremum(x, y)
+```
+
+### c. Viết hàm tính khoảng cách Minkowski của x và y
+$$minkowski(x,y, p) = \sqrt[p]{\sum_{i=1}^{n} (x_i - y_i)^p}$$
+```{r, echo=TRUE}
+minkowski <- function(x, y, p) {
+  return((sum((x-y)^p))^(1/p))
+  
+} 
+
+minkowski(x, y, 1)
+minkowski(x, y, 2)
+minkowski(x, y, 3)
+minkowski(x, y, 10)
+```
+
+### d. Viết hàm tính khoảng cách cosine của x và y
+
+$$cosine(x,y) = \frac{\sum_{i=1}^{n} (x_i \times y_i)}{\sqrt{\sum_{i=1}^{n} x_i^2)} \times \sqrt{\sum_{i=1}^{n} y_i^2}}$$
+
+```{r, echo=TRUE}
+cosine <- function(x, y) {
+  return(sum(x*y)/(sqrt(sum(x^2))*sqrt(sum(y^2))))
+
+} 
+
+cosine(x, y)
+```
+
+## Câu 3. Cho vector x, viết hàm chuẩn hóa x theo các trường hợp sau:
+```{r, echo = TRUE}
+x = c(200, 300, 400, 600, 1000)
+```
+
+### a. min-max normalization
+$$x_i' = \frac{x_i - min(x)}{max(x) - min(x)} (newmax - newmin) - newmin$$
+```{r, echo = TRUE}
+minmax.norm <- function(x, newmin, newmax) {
+  return(((x-min(x))/(max(x)-min(x)))*(newmax-newmin)-newmin)
+  
+}
+
+minmax.norm(x, 0, 1)
+```
+
+### b. z-score normalization dùng mean absolute deviation
+$$x_i' = \frac{x_i - mean(x)}{mad(x)}$$
+Trong đó:
+$$mad(x) = \frac{1}{n} \sum_{i=1}^{n} |x_i - mean(x)|$$
+
+
+
+```{r, echo = TRUE}
+zscore.mad.norm <- function(x) {
+  return(sum(abs(x-mean(x)))/length(x))
+  
+}
+
+zscore.mad.norm(x)
+```
+
+### c. z-score normalization dùng standard deviation.
+$$x_i' = \frac{x_i - mean(x)}{sample\_stdvar(x)}$$
+```{r, echo = TRUE}
+zscore.sd.norm <- function(x) {
+  return((x-mean(x))/sample_stdvar(x))
+  
+}
+
+zscore.sd.norm(x)
+```
+
+### d. normalization dùng decimal scaling
+$$x_i' = \frac{x_i}{10^j}$$
+Trong đó: $j$ là số nguyên nhỏ nhất mà $max(|x_i'|) < 1$.
+```{r, echo = TRUE}
+decimal.scaling.norm <- function(x) {
+  return(x/10^(nchar(max(x))))
+  
+}
+
+decimal.scaling.norm(x)
+```
